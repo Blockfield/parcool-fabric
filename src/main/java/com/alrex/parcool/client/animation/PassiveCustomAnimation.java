@@ -22,6 +22,24 @@ public class PassiveCustomAnimation {
     private int flyingAnimationLevel = 0;
     private static final int flyingMaxLevel = 20;
 
+    public int fallingAnimationTick() {
+        return fallingAnimationTick;
+    }
+
+    public int flyingAnimationLevelOld() {
+        return flyingAnimationLevelOld;
+    }
+
+    public int flyingAnimationLevel() {
+        return flyingAnimationLevel;
+    }
+
+    public void restoreAnimationCounters(int falling, int flyingOld, int flying) {
+        fallingAnimationTick = falling;
+        flyingAnimationLevelOld = flyingOld;
+        flyingAnimationLevel = flying;
+    }
+
     public void tick(Player player, Parkourability parkourability) {
         flyingAnimationLevelOld = flyingAnimationLevel;
         if (KeyBindings.isKeyForwardDown() && player.getAbilities().flying) {

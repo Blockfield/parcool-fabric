@@ -18,6 +18,15 @@ public abstract class Animator {
         return tick;
     }
 
+    public final int animationTick() {
+        return tick;
+    }
+
+    /** Restore a checkpoint without executing an action, native tick or side effect. */
+    public final void restoreAnimationTick(int tick) {
+        this.tick = tick;
+    }
+
     public abstract boolean shouldRemoved(Player player, Parkourability parkourability);
 
     /**

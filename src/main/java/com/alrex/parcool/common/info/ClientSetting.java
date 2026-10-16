@@ -106,6 +106,19 @@ public abstract class ClientSetting {
         }
     }
 
+    @Environment(EnvType.CLIENT)
+    private static class Local extends Remote {
+        @Override
+        public Boolean get(ParCoolConfig.Client.Booleans item) {
+            // JOIN policy can change after EntityJoinLevel captured this local snapshot.
+            return switch (item) {
+                case EnableAnimation, EnableFallingAnimation, EnableLeanAnimationOfFastRun ->
+                        item.get();
+                default -> super.get(item);
+            };
+        }
+    }
+
     public static final ClientSetting UNSYNCED_INSTANCE = new Default();
 
     public abstract boolean getPossibilityOf(Class<? extends Action> action);
@@ -123,7 +136,7 @@ public abstract class ClientSetting {
     @Environment(EnvType.CLIENT)
     public static ClientSetting readFromLocalConfig() {
         var configInstance = ParCoolConfig.Client.getInstance();
-        Remote instance = new Remote();
+        Remote instance = new Local();
         for (int i = 0; i < instance.actionPossibilities.length; i++) {
             instance.actionPossibilities[i] =
                     configInstance.getPossibilityOf(Actions.LIST.get(i)).get();

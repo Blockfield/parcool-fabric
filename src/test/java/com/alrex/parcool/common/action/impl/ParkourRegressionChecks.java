@@ -11,7 +11,7 @@ import net.minecraft.network.codec.StreamCodec;
 import java.util.List;
 
 public final class ParkourRegressionChecks {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ReflectiveOperationException {
         check(Crawl.allowsSharedKey(false, true, false), "shared key must crawl while stationary");
         check(!Crawl.allowsSharedKey(false, true, true), "moving dodge takes priority");
         for (boolean direction : new boolean[] {false, true}) {
@@ -28,6 +28,8 @@ public final class ParkourRegressionChecks {
             near(Math.sin(radians), Math.sin(Math.toRadians(angle)));
         }
         broadcastCodec();
+        com.alrex.parcool.common.info.ClientSettingPolicyChecks.run();
+        com.alrex.parcool.client.animation.AnimationReplayChecks.run();
         System.out.println(
                 "Shared crawl/dodge key, angle normalization and broadcast codec checks passed");
     }

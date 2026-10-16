@@ -36,6 +36,15 @@ public abstract class Action {
         return doing;
     }
 
+    /** Animation scratch only: never use start/finish to import a decoded checkpoint. */
+    public final void restoreAnimationCounters(
+            boolean doing, int doingTick, int notDoingTick, int tickFromStarted) {
+        this.doing = doing;
+        this.doingTick = doingTick;
+        this.notDoingTick = notDoingTick;
+        this.tickFromStarted = tickFromStarted;
+    }
+
     public void tick() {
         if (doing) {
             doingTick++;

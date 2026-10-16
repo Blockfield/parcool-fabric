@@ -31,9 +31,47 @@ public class Animation {
 
     private Animator animator = null;
     private AnimationOption option = new AnimationOption();
-    private final PassiveCustomAnimation passiveAnimation = new PassiveCustomAnimation();
+    private PassiveCustomAnimation passiveAnimation = new PassiveCustomAnimation();
+    private boolean driven = false;
+    private Animator drivenAnimator;
+
+    public boolean isDriven() {
+        return driven;
+    }
+
+    public void setDriven(AbstractClientPlayer player, boolean driven) {
+        if (player.isLocalPlayer()) {
+            throw new IllegalArgumentException("The local player must retain native animation");
+        }
+        this.driven = driven;
+    }
+
+    public Animator getAnimator() {
+        return driven ? drivenAnimator : animator;
+    }
+
+    public PassiveCustomAnimation getPassiveAnimation() {
+        return passiveAnimation;
+    }
+
+    public AnimationOption getOption() {
+        return option;
+    }
+
+    /** Materialized scratch, not a wire state. The owner must replace it for each native sample. */
+    public void restoreDriven(
+            Animator animator, PassiveCustomAnimation passiveAnimation, AnimationOption option) {
+        if (!driven) throw new IllegalStateException("Animation is not driven");
+        java.util.Objects.requireNonNull(passiveAnimation);
+        java.util.Objects.requireNonNull(option);
+        // Native compatibility mixins can still write the native slot directly.
+        this.drivenAnimator = animator;
+        this.passiveAnimation = passiveAnimation;
+        this.option = option;
+    }
 
     public void setAnimator(Animator animator) {
+        if (driven) return;
         if (!ParCoolConfig.Client.Booleans.EnableAnimation.get()) return;
         if (!ParCoolConfig.Client.getInstance().canAnimate(animator.getClass()).get()) return;
         this.animator = animator;
@@ -41,7 +79,11 @@ public class Animation {
 
     public boolean animatePre(Player player, PlayerModelTransformer modelTransformer) {
         Parkourability parkourability = Parkourability.get(player);
-        if (animator != null && animator.shouldRemoved(player, parkourability)) animator = null;
+        Animator animator = getAnimator();
+        if (!driven && animator != null && animator.shouldRemoved(player, parkourability)) {
+            this.animator = null;
+            animator = null;
+        }
         // Опцию ставим до выхода по animator == null: иначе PassiveCustomAnimation (махи руками
         // в свободном падении) идёт мимо неё и всё равно перебивает чужую позу.
         modelTransformer.setOption(option);
@@ -52,6 +94,7 @@ public class Animation {
 
     public void animatePost(Player player, PlayerModelTransformer modelTransformer) {
         Parkourability parkourability = Parkourability.get(player);
+        Animator animator = getAnimator();
         if (shouldCancelAnimation(player)) return;
         if (animator == null) {
             passiveAnimation.animate(player, parkourability, modelTransformer);
@@ -62,7 +105,11 @@ public class Animation {
 
     public boolean rotatePre(AbstractClientPlayer player, PlayerModelRotator rotator) {
         Parkourability parkourability = Parkourability.get(player);
-        if (animator != null && animator.shouldRemoved(player, parkourability)) animator = null;
+        Animator animator = getAnimator();
+        if (!driven && animator != null && animator.shouldRemoved(player, parkourability)) {
+            this.animator = null;
+            animator = null;
+        }
         if (animator == null) return false;
         if (shouldCancelAnimation(player) || option.isCanceled(AnimationPart.ROTATION))
             return false;
@@ -71,6 +118,7 @@ public class Animation {
 
     public void rotatePost(AbstractClientPlayer player, PlayerModelRotator rotator) {
         Parkourability parkourability = Parkourability.get(player);
+        Animator animator = getAnimator();
         if (shouldCancelAnimation(player) || option.isCanceled(AnimationPart.ROTATION)) return;
         if (animator == null) {
             passiveAnimation.rotate(player, parkourability, rotator);
@@ -93,6 +141,7 @@ public class Animation {
     }
 
     public void tick(AbstractClientPlayer player, Parkourability parkourability) {
+        if (driven) return;
         passiveAnimation.tick(player, parkourability);
         if (animator != null) {
             animator.tick(player);
@@ -100,6 +149,7 @@ public class Animation {
     }
 
     public void onRenderTick(RenderFrameEvent event, Player player, Parkourability parkourability) {
+        if (driven) return;
         if (animator != null) {
             animator.onRenderTick(event, player, parkourability);
         }
@@ -109,6 +159,7 @@ public class Animation {
     }
 
     public void updateAnimationInfo(AbstractClientPlayer player) {
+        if (driven) return;
         ParCoolAnimationInfoEvent animationEvent = new ParCoolAnimationInfoEvent(player, animator);
         ParCoolEvents.post(animationEvent);
         option = animationEvent.getOption();
@@ -124,10 +175,11 @@ public class Animation {
     }
 
     public boolean hasAnimator() {
-        return animator != null;
+        return getAnimator() != null;
     }
 
     public void removeAnimator() {
+        if (driven) return;
         animator = null;
     }
 }

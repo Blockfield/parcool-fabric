@@ -29,12 +29,14 @@ public class ClientRenderProcessor {
         for (Player player : clientPlayer.getCommandSenderWorld().players()) {
             Parkourability parkourability = Parkourability.get(player);
             if (parkourability == null) return;
+            Animation animation = Animation.get(player);
+            if (animation == null) return;
+            // A driven remote's geometry and option were resolved before this frame callback.
+            if (animation.isDriven()) continue;
             List<Action> actions = parkourability.getList();
             for (Action action : actions) {
                 action.onRenderTick(event, player, parkourability);
             }
-            Animation animation = Animation.get(player);
-            if (animation == null) return;
             animation.onRenderTick(event, player, parkourability);
         }
     }
