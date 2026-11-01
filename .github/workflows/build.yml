@@ -30,6 +30,7 @@ on:
         type: string
 permissions:
   contents: write
+  pull-requests: read # bot-gate reads blockfield-review-bot verdicts on the head SHA
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   # A review must never cancel the run it gates.
